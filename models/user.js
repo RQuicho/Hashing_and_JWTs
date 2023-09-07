@@ -19,7 +19,7 @@ class User {
       VALUES ($1, $2, $3, $4, $5, current_timestamp, current_timestamp)
       RETURNING username, password, first_name, last_name, phone`,
       [username, hashedPwd, first_name, last_name, phone]);
-    return res.json(results.rows[0]);
+    return results.rows[0];
   }
 
   /** Authenticate: is this username/password valid? Returns boolean. */
@@ -56,7 +56,6 @@ class User {
     if (!results.rows[0]) {
       throw new ExpressError(`No such user: ${username}`, 404);
     }
-    return results.rows[0];
   }
 
 
@@ -66,12 +65,9 @@ class User {
     const results = await db.query(`
       SELECT
         username,
-        password,
         first_name,
         last_name,
-        phone,
-        join_at,
-        last_login_at
+        phone
       FROM users
       ORDER BY username`);
     return results.rows;
@@ -87,7 +83,7 @@ class User {
    *          join_at,
    *          last_login_at } */
   static async get(username) {
-    const results = db.query(`
+    const results = await db.query(`
       SELECT
         username,
         first_name,
@@ -114,7 +110,7 @@ class User {
    *   {username, first_name, last_name, phone}
    */
   static async messagesFrom(username) {
-    const results = db.query(`
+    const results = await db.query(`
       SELECT 
         m.id,
         m.to_username,
@@ -126,7 +122,7 @@ class User {
         u.phone
       FROM messages AS m
       JOIN users AS u ON m.to_username = u.username
-      WEHRE m.from_username=$1`,
+      WHERE from_username=$1`,
       [username]);
     
     return results.rows.map(m => ({
@@ -152,7 +148,7 @@ class User {
    *   {username, first_name, last_name, phone}
    */
   static async messagesTo(username) {
-    const results = db.query(`
+    const results = await db.query(`
       SELECT 
         m.id,
         m.from_username,
@@ -164,13 +160,13 @@ class User {
         u.phone
       FROM messages AS m
       JOIN users AS u ON m.from_username = u.username
-      WEHRE m.to_username=$1`,
+      WHERE to_username=$1`,
       [username]);
     
     return results.rows.map(m => ({
       id: m.id,
       from_user: {
-        username: m.to_username,
+        username: m.from_username,
         first_name: m.first_name,
         last_name: m.last_name,
         phone: m.phone
